@@ -114,6 +114,29 @@ app.patch('/user/admin/:id',async(req,res)=>{
   const result = await userCollection.updateOne(filter,updateDoc);
   res.send(result);
 })
+//user tourist 
+app.get('/user/tourGuide/:email',async(req,res)=>{
+  const email = req.params.email;
+  const query = {email:email};
+  const user = await userCollection.findOne(query);
+  let tourGuide= false;
+  if(user){
+    tourGuide = user?.role === 'tourGuide'
+  }
+  
+  res.send({tourGuide});
+})
+app.patch('/user/tourGuide/:id',async(req,res)=>{
+  const id = req.params.id;
+  const filter = {_id: new ObjectId(id)};
+  const updateDoc = {
+    $set:{
+      role:'tourGuide'
+    },
+  };
+  const result = await userCollection.updateOne(filter,updateDoc);
+  res.send(result);
+})
 
     // Send a ping to confirm a successful connection
     await client.db("admin").command({ ping: 1 });
