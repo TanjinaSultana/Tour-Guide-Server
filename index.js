@@ -86,6 +86,34 @@ app.post('/user',async(req,res)=>{
   const result = await userCollection.insertOne(item)
   res.send(result);
 })
+app.get('/user',async(req,res)=>{
+  const result = await userCollection.find().toArray();
+  res.send(result);
+})
+//user became Admin 
+app.get('/user/admin/:email',async(req,res)=>{
+  const email = req.params.email;
+  const query = {email:email};
+  const user = await userCollection.findOne(query);
+  let admin= false;
+  if(user){
+    admin = user?.role === 'admin'
+  }
+  
+  res.send({admin});
+})
+
+app.patch('/user/admin/:id',async(req,res)=>{
+  const id = req.params.id;
+  const filter = {_id: new ObjectId(id)};
+  const updateDoc = {
+    $set:{
+      role:'admin'
+    },
+  };
+  const result = await userCollection.updateOne(filter,updateDoc);
+  res.send(result);
+})
 
     // Send a ping to confirm a successful connection
     await client.db("admin").command({ ping: 1 });
