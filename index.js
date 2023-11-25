@@ -28,6 +28,8 @@ async function run() {
     const packageCollection = database.collection("package");
     const guidesCollection = database.collection("guide");
     const wishCollection = database.collection("wish");
+    const cartCollection = database.collection("cart");
+    const userCollection = database.collection("user");
   
     //all packages--------------------------
     app.get('/packages',async(req,res) =>{
@@ -60,6 +62,29 @@ app.post('/wish',async(req,res)=>{
 app.get('/wish',async(req,res) =>{
     const result = await wishCollection.find().toArray();
     res.send(result);
+})
+//cartList 
+
+app.get('/cart',async(req,res) =>{
+  const result = await cartCollection.find().toArray();
+  res.send(result);
+})
+
+app.post('/cart',async(req,res)=>{
+  const item = req.body;
+  const result = await cartCollection.insertOne(item)
+  res.send(result);
+})
+//userList  
+app.post('/user',async(req,res)=>{
+  const item = req.body;
+  const query = {email: item.email}
+  const existingUser = await userCollection.findOne(query);
+  if(existingUser){
+    return res.send({message:"Already Have this user"})
+  }
+  const result = await userCollection.insertOne(item)
+  res.send(result);
 })
 
     // Send a ping to confirm a successful connection
