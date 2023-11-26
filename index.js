@@ -52,6 +52,12 @@ async function run() {
         const result = await guidesCollection.find().toArray();
         res.send(result);
     })
+    app.post('/guide',async(req,res) =>{
+
+        const item = req.body;
+        const result = await guidesCollection.insertOne(item);
+                res.send(result);
+    })
     app.get('/guide/:id',async(req,res) =>{
         const id = req.params.id;
         const query = {_id: new ObjectId(id)}
@@ -80,6 +86,25 @@ app.post('/cart',async(req,res)=>{
   const result = await cartCollection.insertOne(item)
   res.send(result);
 })
+
+//wishlist
+app.get('/wish',async(req,res) =>{
+  const result = await wishCollection.find().toArray();
+  res.send(result);
+})
+
+app.post('/wish',async(req,res)=>{
+  const item = req.body;
+  const result = await wishCollection.insertOne(item)
+  res.send(result);
+})
+app.delete('/wish/:id',async(req,res)=>{
+  console.log(id);
+  const query= {_id: new ObjectId(id)}
+  const result = await wishCollection.deleteOne(query);
+  res.send(result);
+})
+
 //userList  
 app.post('/user',async(req,res)=>{
   const item = req.body;
