@@ -66,14 +66,23 @@ async function run() {
      })
 //wishlist 
 app.post('/wish',async(req,res)=>{
-    const item = req.body;
-    const result = await wishCollection.insertOne(item)
-    res.send(result);
+  const item = req.body;
+  const result = await wishCollection.insertOne(item)
+  res.send(result);
 })
+
 app.get('/wish',async(req,res) =>{
-    const result = await wishCollection.find().toArray();
-    res.send(result);
+  const result = await wishCollection.find().toArray();
+  res.send(result);
 })
+app.delete('/wish/:id',async(req,res)=>{
+  const id = req.params.id;
+  console.log(id);
+  const query= {_id: new ObjectId(id)}
+  const result = await wishCollection.deleteOne(query);
+  res.send(result);
+})
+
 //cartList 
 
 app.get('/cart',async(req,res) =>{
@@ -82,28 +91,22 @@ app.get('/cart',async(req,res) =>{
 })
 
 app.post('/cart',async(req,res)=>{
+  
   const item = req.body;
   const result = await cartCollection.insertOne(item)
   res.send(result);
 })
-
-//wishlist
-app.get('/wish',async(req,res) =>{
-  const result = await wishCollection.find().toArray();
-  res.send(result);
-})
-
-app.post('/wish',async(req,res)=>{
-  const item = req.body;
-  const result = await wishCollection.insertOne(item)
-  res.send(result);
-})
-app.delete('/wish/:id',async(req,res)=>{
+app.delete('/cart/:id',async(req,res)=>{
+  const id = req.params.id;
   console.log(id);
   const query= {_id: new ObjectId(id)}
-  const result = await wishCollection.deleteOne(query);
+  const result = await cartCollection.deleteOne(query);
   res.send(result);
 })
+
+
+
+
 
 //userList  
 app.post('/user',async(req,res)=>{
@@ -118,6 +121,58 @@ app.post('/user',async(req,res)=>{
 })
 app.get('/user',async(req,res)=>{
   const result = await userCollection.find().toArray();
+  res.send(result);
+})
+//cart become accept
+app.get('/cart/accept/:email',async(req,res)=>{
+  const email = req.params.email;
+  const query = {email:email};
+  console.log(query);
+  const user = await cartCollection.findOne(query);
+  console.log(user);
+  let accept= false;
+  if(user){
+    accept = user?.status === 'accept'
+  }
+  
+  res.send({accept});
+})
+
+app.patch('/cart/accept/:id',async(req,res)=>{
+  const id = req.params.id;
+  const filter = {_id: new ObjectId(id)};
+  const updateDoc = {
+    $set:{
+      status:'accept'
+    },
+  };
+  const result = await cartCollection.updateOne(filter,updateDoc);
+  res.send(result);
+})
+//cart become reject
+app.get('/cart/reject/:email',async(req,res)=>{
+  const email = req.params.email;
+  const query = {email:email};
+  console.log(query);
+  const user = await cartCollection.findOne(query);
+  console.log(user);
+  let reject= false;
+  if(user){
+    reject = user?.status === 'reject'
+  }
+  
+  res.send({reject});
+})
+
+app.patch('/cart/reject/:id',async(req,res)=>{
+  const id = req.params.id;
+  const filter = {_id: new ObjectId(id)};
+  const updateDoc = {
+    $set:{
+      status:'reject'
+    },
+  };
+  const result = await cartCollection.updateOne(filter,updateDoc);
   res.send(result);
 })
 //user became Admin 
