@@ -36,6 +36,11 @@ async function run() {
         const result = await packageCollection.find().toArray();
         res.send(result);
     })
+    app.post('/packages',async(req,res) =>{
+      const item = req.body;
+        const result = await packageCollection.insertOne(item);
+                res.send(result);
+    })
     app.get('/packages/:id',async(req,res) =>{
        const id = req.params.id;
        const query = {_id: new ObjectId(id)}
