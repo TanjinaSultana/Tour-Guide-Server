@@ -71,6 +71,16 @@ async function run() {
       }
       next();
     }
+    const verifyGuide = async(req,res,next)=>{
+      const email = req.decoded.email;
+      const query =  {email : email};
+      const user = await userCollection.findOne(query);
+      const isTourGuide = user?.role === 'tourGuide'
+      if(!isTourGuide){
+        return res.status(401).send({message:'forbidden-access tourguide'});
+      }
+      next();
+    }
   
     //all packages--------------------------
     app.get('/packages',async(req,res) =>{
@@ -98,6 +108,12 @@ async function run() {
       const result = await storyCollection.insertOne(item);
               res.send(result);
   })
+  app.get('/story/:id',async(req,res) =>{
+    const id = req.params.id;
+    const query = {_id: new ObjectId(id)}
+    const result = await storyCollection.findOne(query);
+     res.send(result);
+ })
     //Tour Guides
     app.get('/guide',async(req,res) =>{
         const result = await guidesCollection.find().toArray();
@@ -131,6 +147,17 @@ app.delete('/wish/:id',async(req,res)=>{
   console.log(id);
   const query= {_id: new ObjectId(id)}
   const result = await wishCollection.deleteOne(query);
+  res.send(result);
+})
+//story
+app.get('/story',async(req,res) =>{
+  const result = await storyCollection.find().toArray();
+  res.send(result);
+})
+app.post('/story',async(req,res)=>{
+  
+  const item = req.body;
+  const result = await storyCollection.insertOne(item)
   res.send(result);
 })
 
@@ -170,7 +197,7 @@ app.post('/user',async(req,res)=>{
   const result = await userCollection.insertOne(item)
   res.send(result);
 })
-app.get('/user',verifyToken,verifyAdmin,async(req,res)=>{
+app.get('/user',verifyToken,verifyAdmin,verifyGuide,async(req,res)=>{
   const result = await userCollection.find().toArray();
   res.send(result);
 })
@@ -254,7 +281,7 @@ app.patch('/user/admin/:id',verifyToken,verifyAdmin,async(req,res)=>{
   res.send(result);
 })
 //user tourist 
-app.get('/user/tourGuide/:email',async(req,res)=>{
+app.get('/user/tourGuide/:email',verifyToken,async(req,res)=>{
   const email = req.params.email;
   const query = {email:email};
   const user = await userCollection.findOne(query);
@@ -265,7 +292,7 @@ app.get('/user/tourGuide/:email',async(req,res)=>{
   
   res.send({tourGuide});
 })
-app.patch('/user/tourGuide/:id',async(req,res)=>{
+app.patch('/user/tourGuide/:id',verifyToken,verifyGuide,async(req,res)=>{
   const id = req.params.id;
   const filter = {_id: new ObjectId(id)};
   const updateDoc = {
