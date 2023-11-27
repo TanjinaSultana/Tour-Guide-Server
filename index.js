@@ -1,6 +1,7 @@
 const express = require('express');
 const app = express();
 const cors = require('cors');
+var jwt = require('jsonwebtoken');
 require('dotenv').config()
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
@@ -24,7 +25,7 @@ const client = new MongoClient(uri, {
 async function run() {
   try {
     // Connect the client to the server	(optional starting in v4.7)
-    await client.connect();
+    //await client.connect();
     const database = client.db("tourGuide");
     const packageCollection = database.collection("package");
     const guidesCollection = database.collection("guide");
@@ -32,6 +33,44 @@ async function run() {
     const cartCollection = database.collection("cart");
     const userCollection = database.collection("user");
     const paymentCollection = database.collection("payment");
+    const storyCollection = database.collection("story");
+
+//jwt
+    app.post('/jwt', (req, res) => {
+      const user = req.body;
+      const token = jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '1h' })
+
+      res.send({ token })
+    })
+    const verifyToken =(req,res,next) =>{
+      
+      
+      if(!req.headers.authorization){
+        return res.status(401).send({message:'forbidden'});
+      }
+      const token =  req.headers.authorization.split(' ')[1];
+      if(!token){
+        return res.status(401).send({message:'forbidden-access'});
+      }
+      jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, (err, decoded) =>{
+        //console.log(decoded.foo) // bar
+        if(err){
+          return res.status(401).send({message:'forbidden-error'});
+        }
+        req.decoded = decoded;
+        next();
+      });
+    }
+    const verifyAdmin = async(req,res,next)=>{
+      const email = req.decoded.email;
+      const query =  {email : email};
+      const user = await userCollection.findOne(query);
+      const isAdmin = user?.role === 'admin'
+      if(!isAdmin){
+        return res.status(401).send({message:'forbidden-access admin'});
+      }
+      next();
+    }
   
     //all packages--------------------------
     app.get('/packages',async(req,res) =>{
@@ -49,6 +88,16 @@ async function run() {
        const result = await packageCollection.findOne(query);
         res.send(result);
     })
+    //story
+    app.get('/story',async(req,res) =>{
+      const result = await storyCollection.find().toArray();
+      res.send(result);
+  })
+  app.post('/story',async(req,res) =>{
+    const item = req.body;
+      const result = await storyCollection.insertOne(item);
+              res.send(result);
+  })
     //Tour Guides
     app.get('/guide',async(req,res) =>{
         const result = await guidesCollection.find().toArray();
@@ -121,7 +170,7 @@ app.post('/user',async(req,res)=>{
   const result = await userCollection.insertOne(item)
   res.send(result);
 })
-app.get('/user',async(req,res)=>{
+app.get('/user',verifyToken,verifyAdmin,async(req,res)=>{
   const result = await userCollection.find().toArray();
   res.send(result);
 })
@@ -178,8 +227,11 @@ app.patch('/cart/reject/:id',async(req,res)=>{
   res.send(result);
 })
 //user became Admin 
-app.get('/user/admin/:email',async(req,res)=>{
+app.get('/user/admin/:email',verifyToken,async(req,res)=>{
   const email = req.params.email;
+  if(email !== req.decoded.email){
+    return res.status(401).send({message:'forbidden-access'});
+  }
   const query = {email:email};
   const user = await userCollection.findOne(query);
   let admin= false;
@@ -190,7 +242,7 @@ app.get('/user/admin/:email',async(req,res)=>{
   res.send({admin});
 })
 
-app.patch('/user/admin/:id',async(req,res)=>{
+app.patch('/user/admin/:id',verifyToken,verifyAdmin,async(req,res)=>{
   const id = req.params.id;
   const filter = {_id: new ObjectId(id)};
   const updateDoc = {
@@ -243,11 +295,11 @@ app.post('/create-payment-intent', async (req, res) => {
 });
 
 
-app.get('/payments/:email', async (req, res) => {
+app.get('/payments/:email', verifyToken,async (req, res) => {
   const query = { email: req.params.email }
-  // if (req.params.email !== req.decoded.email) {
-  //   return res.status(403).send({ message: 'forbidden access' });
-  // }
+  if (req.params.email !== req.decoded.email) {
+    return res.status(403).send({ message: 'forbidden access' });
+  }
   const result = await paymentCollection.find(query).toArray();
   res.send(result);
 })
