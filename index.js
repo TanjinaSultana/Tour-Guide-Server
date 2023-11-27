@@ -3,6 +3,7 @@ const app = express();
 const cors = require('cors');
 require('dotenv').config()
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
+const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 const port = process.env.PORT || 5005;
 //middlewares
 app.use(cors());
@@ -30,6 +31,7 @@ async function run() {
     const wishCollection = database.collection("wish");
     const cartCollection = database.collection("cart");
     const userCollection = database.collection("user");
+    const paymentCollection = database.collection("payment");
   
     //all packages--------------------------
     app.get('/packages',async(req,res) =>{
@@ -221,6 +223,47 @@ app.patch('/user/tourGuide/:id',async(req,res)=>{
   };
   const result = await userCollection.updateOne(filter,updateDoc);
   res.send(result);
+})
+//payment intent
+
+app.post('/create-payment-intent', async (req, res) => {
+  const { price } = req.body;
+  const amount = parseInt(price * 100);
+  console.log(amount, 'amount inside the intent')
+
+  const paymentIntent = await stripe.paymentIntents.create({
+    amount: amount,
+    currency: 'usd',
+    payment_method_types: ['card']
+  });
+
+  res.send({
+    clientSecret: paymentIntent.client_secret
+  })
+});
+
+
+app.get('/payments/:email', async (req, res) => {
+  const query = { email: req.params.email }
+  // if (req.params.email !== req.decoded.email) {
+  //   return res.status(403).send({ message: 'forbidden access' });
+  // }
+  const result = await paymentCollection.find(query).toArray();
+  res.send(result);
+})
+
+app.post('/payments', async (req, res) => {
+  const payment = req.body;
+  const paymentResult = await paymentCollection.insertOne(payment);
+  console.log('payment info',payment);
+  const query = {
+    _id: {
+      $in: payment.cartIds.map(id => new ObjectId(id))
+    }
+  };
+
+  const deleteResult = await cartCollection.deleteMany(query)
+  res.send({paymentResult,deleteResult})
 })
 
     // Send a ping to confirm a successful connection
