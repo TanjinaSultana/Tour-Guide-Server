@@ -34,6 +34,7 @@ async function run() {
     const userCollection = database.collection("user");
     const paymentCollection = database.collection("payment");
     const storyCollection = database.collection("story");
+    const reviewCollection = database.collection("review");
 
 //jwt
     app.post('/jwt', (req, res) => {
@@ -114,6 +115,17 @@ async function run() {
     const result = await storyCollection.findOne(query);
      res.send(result);
  })
+ //review
+ app.get('/review',async(req,res) =>{
+  const result = await reviewCollection.find().toArray();
+  res.send(result);
+})
+app.post('/review',async(req,res) =>{
+const item = req.body;
+  const result = await reviewCollection.insertOne(item);
+          res.send(result);
+})
+
     //Tour Guides
     app.get('/guide',async(req,res) =>{
         const result = await guidesCollection.find().toArray();
@@ -197,7 +209,7 @@ app.post('/user',async(req,res)=>{
   const result = await userCollection.insertOne(item)
   res.send(result);
 })
-app.get('/user',verifyToken,verifyAdmin,verifyGuide,async(req,res)=>{
+app.get('/user',verifyToken,verifyAdmin,async(req,res)=>{
   const result = await userCollection.find().toArray();
   res.send(result);
 })
