@@ -304,7 +304,7 @@ app.get('/user/tourGuide/:email',verifyToken,async(req,res)=>{
   
   res.send({tourGuide});
 })
-app.patch('/user/tourGuide/:id',verifyToken,verifyGuide,async(req,res)=>{
+app.patch('/user/tourGuide/:id',verifyToken,verifyAdmin,async(req,res)=>{
   const id = req.params.id;
   const filter = {_id: new ObjectId(id)};
   const updateDoc = {
